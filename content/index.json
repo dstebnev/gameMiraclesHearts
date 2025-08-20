@@ -1,0 +1,5 @@
+{
+  "episodes": [
+    { "id": "ep1", "title": "Пропавший том", "file": "episodes/ep1.json" }
+  ]
+}
