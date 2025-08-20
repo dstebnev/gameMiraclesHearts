@@ -1,0 +1,10 @@
+{
+  "episodeId": "ep1",
+  "title": "Пропавший том",
+  "start": "A0",
+  "nodes": {
+    "A0": { "type": "bg", "bg": "bg_library_evening", "next": "A1" },
+    "A1": { "type": "say", "who": "MC", "text": "Где же нужный мне том?", "next": "A2" },
+    "A2": { "type": "end" }
+  }
+}

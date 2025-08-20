@@ -1,2 +1,14 @@
-# gameMiraclesHearts
-Game
+# Сердца на грани чудес
+
+Прототип визуальной новеллы для Яндекс Игр. Проект реализуется на TypeScript с целью демонстрации движка, загружающего эпизоды из JSON.
+
+Полное техническое задание находится в [docs/TECHNICAL_SPEC.md](docs/TECHNICAL_SPEC.md).
+
+## Разработка
+
+```bash
+npm install
+npm test
+```
+
+`npm test` запускает проверку TypeScript-компиляции.
