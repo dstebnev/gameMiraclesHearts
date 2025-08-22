@@ -1,20 +1,19 @@
+export interface ChoiceOption {
+  id: string;
+  label: string;
+  next: string;
+  gain?: Record<string, number>;
+  req?: Record<string, number>;
+  meta?: string;
+}
+
 export type Node =
   | { type: 'bg'; bg: string; next: string }
   | { type: 'say'; who: string; text: string; next: string }
   | { type: 'set'; vars: Record<string, string | number>; next: string }
   | { type: 'sprite'; who: string; sprite: string; pos: string; next: string }
-  | {
-      type: 'choice';
-      text: string;
-      options: Array<{
-        id: string;
-        label: string;
-        next: string;
-        gain?: Record<string, number>;
-        req?: Record<string, number>;
-        meta?: string;
-      }>;
-    }
+  | { type: 'music'; music: string; next: string }
+  | { type: 'choice'; text: string; options: ChoiceOption[] }
   | { type: 'check'; req: Record<string, number>; onPass: string; onFail: string }
   | { type: 'sfx'; sfx: string; next: string }
   | { type: 'minigame'; id: string; rules: string; onWin: string; onLose: string }
@@ -34,9 +33,82 @@ function appendLine(container: HTMLElement, text: string): void {
   container.appendChild(p);
 }
 
-export function runEpisode(ep: Episode, container: HTMLElement): void {
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+function checkReq(req: Record<string, number> | undefined, state: Record<string, any>): boolean {
+  if (!req) return true;
+  for (const [key, val] of Object.entries(req)) {
+    if ((state[key] ?? 0) < val) return false;
+  }
+  return true;
+}
+
+function applyGain(gain: Record<string, number> | undefined, state: Record<string, any>): void {
+  if (!gain) return;
+  for (const [key, val] of Object.entries(gain)) {
+    state[key] = (state[key] ?? 0) + val;
+  }
+}
+
+function describeCost(gain?: Record<string, number>, meta?: string): string {
+  const parts: string[] = [];
+  if (gain) {
+    if (typeof gain.energy === 'number' && gain.energy < 0) {
+      parts.push(`${-gain.energy} energy`);
+    }
+    if (typeof gain.runes === 'number' && gain.runes < 0) {
+      parts.push(`${-gain.runes} runes`);
+    }
+  }
+  if (meta && /premium|iap/i.test(meta)) {
+    parts.push('premium');
+  }
+  return parts.length ? ` (${parts.join(', ')})` : '';
+}
+
+async function presentChoices(
+  options: ChoiceOption[],
+  state: Record<string, any>,
+  container: HTMLElement
+): Promise<ChoiceOption> {
+  container.innerHTML = '';
+  return new Promise((resolve) => {
+    options.forEach((opt) => {
+      const btn = document.createElement('button');
+      btn.textContent = opt.label + describeCost(opt.gain, opt.meta);
+      const ok = checkReq(opt.req, state);
+      if (!ok) btn.disabled = true;
+      btn.addEventListener('click', () => {
+        if (!checkReq(opt.req, state)) return;
+        container.innerHTML = '';
+        resolve(opt);
+      });
+      container.appendChild(btn);
+    });
+  });
+}
+
+export async function runEpisode(ep: Episode, container: HTMLElement): Promise<void> {
   let current = ep.start;
   container.innerHTML = '';
+
+  const bg = document.createElement('div');
+  bg.className = 'bg';
+  const spriteLayer = document.createElement('div');
+  spriteLayer.className = 'sprites';
+  const log = document.createElement('div');
+  log.className = 'log';
+  const choiceLayer = document.createElement('div');
+  choiceLayer.className = 'choices';
+  container.append(bg, spriteLayer, log, choiceLayer);
+
+  const sprites = new Map<string, HTMLImageElement>();
+  const musicAudio = new Audio();
+  musicAudio.loop = true;
+  const sfxAudio = new Audio();
+
   const state: Record<string, any> = {};
   while (current) {
     const node = ep.nodes[current];
@@ -44,12 +116,21 @@ export function runEpisode(ep: Episode, container: HTMLElement): void {
       throw new Error(`Node ${current} not found`);
     }
     switch (node.type) {
-      case 'bg':
-        appendLine(container, `Background: ${node.bg}`);
+      case 'bg': {
+        const url = new URL(`../../assets/bg/${node.bg}.png`, import.meta.url).href;
+        bg.style.backgroundImage = `url(${url})`;
         current = node.next;
         break;
+      }
+      case 'music': {
+        const url = new URL(`../../assets/music/${node.music}.mp3`, import.meta.url).href;
+        musicAudio.src = url;
+        musicAudio.play().catch(() => {});
+        current = node.next;
+        break;
+      }
       case 'say':
-        appendLine(container, `${node.who}: ${node.text}`);
+        appendLine(log, `${node.who}: ${node.text}`);
         current = node.next;
         break;
       case 'set':
@@ -63,42 +144,54 @@ export function runEpisode(ep: Episode, container: HTMLElement): void {
         }
         current = node.next;
         break;
-      case 'sprite':
-        appendLine(
-          container,
-          `Sprite: ${node.who} -> ${node.sprite} (${node.pos})`
-        );
+      case 'sprite': {
+        const url = new URL(
+          `../../assets/characters/${node.sprite}.png`,
+          import.meta.url
+        ).href;
+        let img = sprites.get(node.who);
+        if (!img) {
+          img = document.createElement('img');
+          sprites.set(node.who, img);
+          spriteLayer.appendChild(img);
+        }
+        img.src = url;
+        img.style.position = 'absolute';
+        img.style.bottom = '0';
+        img.style.maxHeight = '100%';
+        img.style.left = '';
+        img.style.right = '';
+        img.style.transform = '';
+        if (node.pos === 'left') img.style.left = '0';
+        else if (node.pos === 'right') img.style.right = '0';
+        else {
+          img.style.left = '50%';
+          img.style.transform = 'translateX(-50%)';
+        }
         current = node.next;
         break;
-      case 'choice':
-        appendLine(container, node.text);
-        node.options.forEach((opt, i) => {
-          appendLine(container, `${i + 1}. ${opt.label}`);
-        });
-        const option = node.options[0];
-        if (option.gain) {
-          for (const [key, val] of Object.entries(option.gain)) {
-            state[key] = (state[key] ?? 0) + val;
-          }
-        }
-        current = option.next;
+      }
+      case 'choice': {
+        appendLine(log, node.text);
+        const opt = await presentChoices(node.options, state, choiceLayer);
+        applyGain(opt.gain, state);
+        current = opt.next;
         break;
-      case 'check':
-        let passed = true;
-        for (const [key, val] of Object.entries(node.req)) {
-          if ((state[key] ?? 0) < val) {
-            passed = false;
-            break;
-          }
-        }
+      }
+      case 'check': {
+        const passed = checkReq(node.req, state);
         current = passed ? node.onPass : node.onFail;
         break;
-      case 'sfx':
-        appendLine(container, `SFX: ${node.sfx}`);
+      }
+      case 'sfx': {
+        const url = new URL(`../../assets/sfx/${node.sfx}.mp3`, import.meta.url).href;
+        sfxAudio.src = url;
+        sfxAudio.play().catch(() => {});
         current = node.next;
         break;
+      }
       case 'minigame':
-        appendLine(container, `Minigame: ${node.id} - ${node.rules}`);
+        appendLine(log, `Minigame: ${node.id} - ${node.rules}`);
         current = node.onWin;
         break;
       case 'jump':
@@ -109,13 +202,15 @@ export function runEpisode(ep: Episode, container: HTMLElement): void {
           const summary = node.summary.replace(/\{(.*?)\}/g, (_, k) => {
             return String(state[k] ?? 0);
           });
-          appendLine(container, summary);
+          appendLine(log, summary);
         }
-        appendLine(container, 'The End');
+        appendLine(log, 'The End');
         return;
-      default:
+      default: {
         const _exhaustive: never = node;
         throw new Error(`Unknown node type: ${(_exhaustive as any).type}`);
+      }
     }
+    await nextFrame();
   }
 }

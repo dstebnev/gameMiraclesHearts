@@ -3,7 +3,7 @@
   "title": "Пропавший том",
   "start": "A0",
   "nodes": {
-    "A0": { "type": "set", "vars": {"music":"calm_theme_1"}, "next":"A1" },
+    "A0": { "type": "music", "music":"calm_theme_1", "next":"A1" },
     "A1": { "type": "bg", "bg":"bg_library_evening", "next":"A2" },
     "A2": { "type": "say", "who":"MC", "text":"Вечер в библиотеке всегда звучит шёпотом страниц. И сегодня — слишком тихо.", "next":"A3" },
     "A3": { "type": "sprite", "who":"Kiana", "sprite":"kiana_happy", "pos":"right", "next":"A4" },
