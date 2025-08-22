@@ -10,8 +10,15 @@ export interface Episode {
   nodes: Record<string, Node>;
 }
 
-export function runEpisode(ep: Episode): void {
+function appendLine(container: HTMLElement, text: string): void {
+  const p = document.createElement('p');
+  p.textContent = text;
+  container.appendChild(p);
+}
+
+export function runEpisode(ep: Episode, container: HTMLElement): void {
   let current = ep.start;
+  container.innerHTML = '';
   while (current) {
     const node = ep.nodes[current];
     if (!node) {
@@ -19,15 +26,15 @@ export function runEpisode(ep: Episode): void {
     }
     switch (node.type) {
       case 'bg':
-        console.log(`Background: ${node.bg}`);
+        appendLine(container, `Background: ${node.bg}`);
         current = node.next;
         break;
       case 'say':
-        console.log(`${node.who}: ${node.text}`);
+        appendLine(container, `${node.who}: ${node.text}`);
         current = node.next;
         break;
       case 'end':
-        console.log('The End');
+        appendLine(container, 'The End');
         return;
     }
   }

@@ -8,5 +8,9 @@ import { runEpisode, Episode } from './core/engine/episodeRunner.js';
     throw new Error(`Failed to load episode: ${res.status} ${res.statusText}`);
   }
   const ep = await res.json();
-  runEpisode(ep as Episode);
+  const container = document.getElementById('game');
+  if (!container) {
+    throw new Error('Game container element not found');
+  }
+  runEpisode(ep as Episode, container);
 })();
