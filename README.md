@@ -9,6 +9,9 @@
 ```bash
 npm install
 npm test
+npm run build
 ```
 
 `npm test` запускает проверку TypeScript-компиляции.
+
+`npm run build` компилирует исходники в папку `public`, после чего можно открыть `public/index.html` в браузере или раздавать её через статический сервер.
