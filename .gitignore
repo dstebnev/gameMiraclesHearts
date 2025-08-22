@@ -3,7 +3,3 @@ node_modules
 dist
 .DS_Store
 
-public/*.js
-public/core/
-public/content/
-
