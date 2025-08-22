@@ -1,3 +1,5 @@
+import { autoSave } from '../save.js';
+
 export interface ChoiceOption {
   id: string;
   label: string;
@@ -90,8 +92,13 @@ async function presentChoices(
   });
 }
 
-export async function runEpisode(ep: Episode, container: HTMLElement): Promise<void> {
-  let current = ep.start;
+export async function runEpisode(
+  ep: Episode,
+  container: HTMLElement,
+  startNode: string = ep.start,
+  initialState: Record<string, any> = {}
+): Promise<void> {
+  let current = startNode;
   container.innerHTML = '';
 
   const bg = document.createElement('div');
@@ -109,7 +116,7 @@ export async function runEpisode(ep: Episode, container: HTMLElement): Promise<v
   musicAudio.loop = true;
   const sfxAudio = new Audio();
 
-  const state: Record<string, any> = {};
+  const state: Record<string, any> = { ...initialState };
   while (current) {
     const node = ep.nodes[current];
     if (!node) {
@@ -205,11 +212,21 @@ export async function runEpisode(ep: Episode, container: HTMLElement): Promise<v
           appendLine(log, summary);
         }
         appendLine(log, 'The End');
-        return;
+        current = '';
+        break;
       default: {
         const _exhaustive: never = node;
         throw new Error(`Unknown node type: ${(_exhaustive as any).type}`);
       }
+    }
+    autoSave({
+      episodeId: ep.episodeId,
+      nodeId: current,
+      resources: state,
+      version: 1,
+    });
+    if (!current) {
+      return;
     }
     await nextFrame();
   }
