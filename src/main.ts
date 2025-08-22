@@ -12,5 +12,5 @@ import { runEpisode, Episode } from './core/engine/episodeRunner.js';
   if (!container) {
     throw new Error('Game container element not found');
   }
-  runEpisode(ep as Episode, container);
+  await runEpisode(ep as Episode, container);
 })();
