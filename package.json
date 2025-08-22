@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "tsc --noEmit",
-    "build": "tsc && cp -r content public/content"
+    "build": "tsc && cp -r content public/content && cp -r assets public/assets"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
