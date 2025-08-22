@@ -6,8 +6,9 @@
     "strict": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "outDir": "public"
+    "outDir": "public",
+    "rootDir": "src"
   },
-  "include": ["src", "content"],
+  "include": ["src"],
   "exclude": ["node_modules"]
 }
