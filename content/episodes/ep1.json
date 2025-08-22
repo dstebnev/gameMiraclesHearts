@@ -3,8 +3,119 @@
   "title": "Пропавший том",
   "start": "A0",
   "nodes": {
-    "A0": { "type": "bg", "bg": "bg_library_evening", "next": "A1" },
-    "A1": { "type": "say", "who": "MC", "text": "Где же нужный мне том?", "next": "A2" },
-    "A2": { "type": "end" }
+    "A0": { "type": "set", "vars": {"music":"calm_theme_1"}, "next":"A1" },
+    "A1": { "type": "bg", "bg":"bg_library_evening", "next":"A2" },
+    "A2": { "type": "say", "who":"MC", "text":"Вечер в библиотеке всегда звучит шёпотом страниц. И сегодня — слишком тихо.", "next":"A3" },
+    "A3": { "type": "sprite", "who":"Kiana", "sprite":"kiana_happy", "pos":"right", "next":"A4" },
+    "A4": { "type": "say", "who":"Kiana", "text":"Эй! Ты опять задержался. Я принесла тебе чай… Без сахара, как ты любишь.", "next":"A5" },
+    "A5": { "type": "choice",
+      "text":"Ответить Киане",
+      "options":[
+        {
+          "id":"A5a",
+          "label":"Спасибо, ты чудо.",
+          "gain":{"hearts_kiana":1},
+          "next":"A6"
+        },
+        {
+          "id":"A5b",
+          "label":"Сначала дела. Расскажешь по пути?",
+          "gain":{},
+          "next":"A6"
+        }
+      ]
+    },
+    "A6": { "type":"say", "who":"Kiana", "text":"Тебе понравится. Я дорисовала ту станцию метро — попробуем оживить?", "next":"A7" },
+    "A7": { "type":"say", "who":"MC", "text":"Подожди… Где «Грани чудес»? Он всегда лежал здесь.", "next":"A8" },
+    "A8": { "type":"check", "req":{"energy":2}, "onPass":"A9", "onFail":"A8_FAIL" },
+
+    "A8_FAIL": {
+      "type":"choice",
+      "text":"Не хватает энергии (2). Что сделать?",
+      "options":[
+        {"id":"A8f1","label":"Посмотреть рекламу (+2 энергии)","meta":"rewarded_ad","next":"A8_REWARD"},
+        {"id":"A8f2","label":"Купить энергию (IAP)","meta":"iap_energy_pack","next":"A8_IAP"},
+        {"id":"A8f3","label":"Вернуться в меню","next":"END_EP1_SOFTLOCK"}
+      ]
+    },
+    "A8_REWARD": { "type":"set","vars":{"energy":"+2"},"next":"A8" },
+    "A8_IAP":    { "type":"set","vars":{"energy":"+10"},"next":"A8" },
+
+    "A9": { "type":"set", "vars":{"energy":"-2"}, "next":"A10" },
+    "A10": { "type":"sfx", "sfx":"page_flip", "next":"A11" },
+    "A11": { "type":"say", "who":"MC", "text":"Пропал редкий том. Без записи выдачи. Кто-то обошёл защиту.", "next":"B0" },
+
+    "B0": { "type":"bg", "bg":"bg_archive_basement", "next":"B1" },
+    "B1": { "type":"say", "who":"MC", "text":"В подвале — слабые следы чар. Нужно навести порядок в символах.", "next":"B2" },
+    "B2": { "type":"minigame",
+      "id":"glyph_match_1",
+      "rules":"Соедини пары рун, не пересекая линии (3x3).",
+      "onWin":"B3",
+      "onLose":"B2_RETRY"
+    },
+    "B2_RETRY": { "type":"choice", "text":"Попробовать ещё раз?",
+      "options":[
+        {"id":"B2r1","label":"Повторить (бесплатно)","next":"B2"},
+        {"id":"B2r2","label":"Подсказка за руну (-1)","req":{"runes":1},"gain":{"runes":-1},"next":"B2_HINT"},
+        {"id":"B2r3","label":"Скипнуть за руну (-2)","req":{"runes":2},"gain":{"runes":-2,"clues":1},"next":"B3"}
+      ]
+    },
+    "B2_HINT": { "type":"say","who":"System","text":"Подсветка пары символов...", "next":"B2" },
+
+    "B3": { "type":"set", "vars":{"clues":"+1"}, "next":"B4" },
+    "B4": { "type":"sprite", "who":"Ilya", "sprite":"ilya_neutral", "pos":"left", "next":"C0" },
+
+    "C0": { "type":"say", "who":"Ilya", "text":"Значит, пропажа подтверждается. Ты видел, кто входил в подвал?", "next":"C1" },
+    "C1": { "type":"choice", "text":"Как ответить Илье?",
+      "options":[
+        {"id":"C1a","label":"Я на дежурстве один. Разберусь сам.","next":"C2"},
+        {"id":"C1b","label":"Нужна помощь. Есть след чар.","gain":{"hearts_ilya":1}, "next":"C2"},
+        {"id":"C1c","label":"(Премиум) Рассказать про защёлку портала (-2 руны)","req":{"runes":2},"gain":{"runes":-2,"hearts_ilya":1,"clues":1},"next":"C2"}
+      ]
+    },
+    "C2": { "type":"say", "who":"Ilya", "text":"Тогда так: я проверю входы, а ты — своих художников. Говорят, рисунки иногда оживают…", "next":"D0" },
+
+    "D0": { "type":"bg", "bg":"bg_library_hall", "next":"D1" },
+    "D1": { "type":"choice", "text":"К кому пойти?",
+      "options":[
+        {"id":"D1a","label":"К Киане (романтика) (-3 энергии)","req":{"energy":3},"next":"D_K","gain":{"energy":-3}},
+        {"id":"D1b","label":"К Илье (расследование) (-3 энергии)","req":{"energy":3},"next":"D_I","gain":{"energy":-3}},
+        {"id":"D1c","label":"(Премиум) Тайком в метро за тенью (-1 руна)","req":{"runes":1},"gain":{"runes":-1},"next":"E_METRO_PREM"}
+      ]
+    },
+
+    "D_K": { "type":"bg", "bg":"bg_studio", "next":"D_K1" },
+    "D_K1": { "type":"sprite","who":"Kiana","sprite":"kiana_focus","pos":"right","next":"D_K2" },
+    "D_K2": { "type":"say","who":"Kiana","text":"Смотри. Если соединить линии — выходит карта переходов. Хочешь попробовать вместе?", "next":"D_K3" },
+    "D_K3": { "type":"choice","text":"Как провести вечер с Кианой?",
+      "options":[
+        {"id":"D_K3a","label":"Работать рядом (+1 улики)","gain":{"clues":1},"next":"E0"},
+        {"id":"D_K3b","label":"Флиртовать деликатно (+2 сердца Кианы)","gain":{"hearts_kiana":2},"next":"E0"},
+        {"id":"D_K3c","label":"(Премиум) Вечерний скетч-ритуал (-2 руны, +1 улики, +2 сердца)","req":{"runes":2},"gain":{"runes":-2,"clues":1,"hearts_kiana":2},"next":"E0"}
+      ]
+    },
+
+    "D_I": { "type":"bg","bg":"bg_rooftop","next":"D_I1" },
+    "D_I1": { "type":"sprite","who":"Ilya","sprite":"ilya_serious","pos":"left","next":"D_I2" },
+    "D_I2": { "type":"say","who":"Ilya","text":"Камеры у чёрного входа погасли на 4 минуты. Это не случайность.", "next":"D_I3" },
+    "D_I3": { "type":"choice","text":"Как действовать?",
+      "options":[
+        {"id":"D_I3a","label":"Идём к сторожу (+1 улики)","gain":{"clues":1},"next":"E0"},
+        {"id":"D_I3b","label":"Предложить план перехвата (+2 сердца Ильи)","gain":{"hearts_ilya":2},"next":"E0"},
+        {"id":"D_I3c","label":"(Премиум) Сравнить сигнатуры чар (-2 руны, +1 улики, +1 сердце)","req":{"runes":2},"gain":{"runes":-2,"clues":1,"hearts_ilya":1},"next":"E0"}
+      ]
+    },
+
+    "E_METRO_PREM": { "type":"bg","bg":"bg_metro_tunnel","next":"E_METRO1" },
+    "E_METRO1": { "type":"say","who":"MC","text":"Тень скользит между колонн. Я едва успеваю уловить… символ на стене?", "next":"E_METRO2" },
+    "E_METRO2": { "type":"set","vars":{"clues":"+1"},"next":"E1" },
+
+    "E0": { "type":"jump","to":"E1" },
+
+    "E1": { "type":"bg","bg":"bg_city_night","next":"E2" },
+    "E2": { "type":"say","who":"Narrator","text":"Ночь города гудит, как провод. Пропажа — лишь начало. В метро что-то шевелится.", "next":"E3" },
+    "E3": { "type":"end","save":true, "summary":"Итоги эпизода: +{clues} улики, ♥Киана {hearts_kiana}, ♥Илья {hearts_ilya}" },
+
+    "END_EP1_SOFTLOCK": { "type":"end","save":false, "summary":"Вернись позже, когда будет энергия." }
   }
 }
